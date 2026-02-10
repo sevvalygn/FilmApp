@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Film İzleme Uygulaması - Ana Sayfa</title>
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navbar - Bootstrap bileşeni -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="index.html">
+        <i class="bi bi-film me-2"></i>Film Uygulaması
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Menü">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="index.html"><i class="bi bi-house-door me-1"></i>Ana Sayfa</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link position-relative" href="favorites.html">
+              <i class="bi bi-heart-fill text-danger me-1"></i>Favoriler
+              <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" id="favoriSayisi">0</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+    <!-- Hero - Bootstrap grid ve tipografi -->
+    <section class="row mb-5">
+      <div class="col-12">
+        <div class="bg-dark text-white rounded-3 p-5 text-center shadow">
+          <h1 class="display-5 fw-bold mb-2">Film Keşfet</h1>
+          <p class="lead mb-0 opacity-75">Kategorilere göz atın, kartlara tıklayarak detayları görün ve favorilerinize ekleyin.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Kategori filtreleri - Bootstrap buton grubu -->
+    <section class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex flex-wrap gap-2 justify-content-center" id="kategoriListesi">
+          <button type="button" class="btn btn-outline-primary active" data-kategori="tum">Tümü</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filmler - Bootstrap grid ve kartlar (tıklanabilir kartlar → product.html) -->
+    <section class="row mb-5">
+      <div class="col-12">
+        <h2 class="h5 mb-3 fw-bold">Filmler</h2>
+      </div>
+      <div class="col-12">
+        <div class="row g-4" id="filmKartlari"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    function filmKartHTML(film) {
+      var favoride = favoriMi(film.id);
+      var kategoriAd = KATEGORILER.find(function(k) { return k.id === film.kategori; });
+      var kategoriLabel = kategoriAd ? kategoriAd.ad : film.kategori;
+      var posterSrc = film.poster && film.poster.indexOf('http') === 0 ? film.poster : ('images/' + (film.poster || 'placeholder.jpg'));
+      var detailUrl = getProductUrl(film.id);
+      return '<div class="col-12 col-sm-6 col-lg-4 col-xl-3">' +
+        '<div class="card film-kart h-100 shadow-sm">' +
+        '  <a href="' + detailUrl + '" class="film-kart-link text-decoration-none text-dark">' +
+        '    <img src="' + posterSrc + '" class="card-img-top" alt="' + film.baslik + '" onerror="this.src=\'https://via.placeholder.com/300x450?text=Film\'">' +
+        '    <div class="card-body">' +
+        '      <h5 class="card-title">' + film.baslik + '</h5>' +
+        '      <span class="badge bg-secondary mb-2">' + kategoriLabel + '</span>' +
+        '      <p class="card-text small text-muted mb-0">' + film.yil + ' • IMDB: ' + film.imdb + '</p>' +
+        '    </div>' +
+        '  </a>' +
+        '  <div class="card-footer bg-white border-0 pt-0">' +
+        '    <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-favori" data-id="' + film.id + '" title="Favorilere ekle">' +
+        (favoride ? '<i class="bi bi-heart-fill"></i> Favorilerden Çıkar' : '<i class="bi bi-heart"></i> Favorilere Ekle') +
+        '    </button>' +
+        '  </div>' +
+        '</div></div>';
+    }
+
+    function renderFilmler(kategori) {
+      seciliKategori = kategori || 'tum';
+      var container = document.getElementById('filmKartlari');
+      var list = kategori && kategori !== 'tum' ? FILMLER.filter(function(f) { return f.kategori === kategori; }) : FILMLER;
+      container.innerHTML = list.map(filmKartHTML).join('');
+      container.querySelectorAll('.btn-favori').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFavori(parseInt(btn.dataset.id, 10));
+          renderFilmler(seciliKategori);
+          guncelleFavoriSayisi();
+        });
+      });
+    }
+
+    function renderKategoriler() {
+      var container = document.getElementById('kategoriListesi');
+      var html = '<button type="button" class="btn btn-outline-primary active" data-kategori="tum">Tümü</button>';
+      KATEGORILER.forEach(function(k) {
+        html += '<button type="button" class="btn btn-outline-primary" data-kategori="' + k.id + '">' + k.ad + '</button>';
+      });
+      container.innerHTML = html;
+      container.querySelectorAll('.btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          container.querySelectorAll('.btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          renderFilmler(btn.dataset.kategori);
+        });
+      });
+    }
+
+    var seciliKategori = 'tum';
+    renderKategoriler();
+    renderFilmler('tum');
+    guncelleFavoriSayisi();
+  </script>
+</body>
+</html>
